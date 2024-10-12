@@ -1,9 +1,15 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
+#include <OneWire.h>
+#include <DallasTemperature.h>
 
 const char* ssid = "vietsquad";
 const char* password = "klapeczki";
-const char* mqtt_server = "YOUR_MQTT_BROKER_IP";
+const char* mqtt_server = "192.168.129.25";
+#define ONE_WIRE_BUS 2
+
+unsigned long sensorStamp = 0;
+unsigned long mqttStamp = 0;
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -62,21 +68,21 @@ void loop() {
 
   static unsigned long sensorStamp = 0;
   static unsigned long mqttStamp = 0;
-
-  if (millis() - sensorStamp > 100) {
+if (millis() - sensorStamp > 100) {
     sensorStamp = millis();
-    int reading = analogRead(0);
-    float temp = reading * 0.0048828125 * 100;
+    sensors.requestTemperatures(); // Request temperature readings
+    float temp = sensors.getTempCByIndex(0); // Get temperature from the first sensor
     Serial.print(F("Real Time Temp: "));
     Serial.println(temp);
   }
 
-  if (millis() - mqttStamp > 10000) { // 10 seconds
+  // Check if it's time to publish to MQTT
+  if (millis() - mqttStamp > 1000) { // 10 seconds
     mqttStamp = millis();
-    int reading = analogRead(0);
-    float temp = reading * 0.0048828125 * 100;
-    char* tempString; // Define tempString as a character array
+    sensors.requestTemperatures(); // Request temperature readings
+    float temp = sensors.getTempCByIndex(0); // Get temperature from the first sensor
+    char tempString[10]; // Define tempString as a character array with sufficient size
     snprintf(tempString, sizeof(tempString), "%.2f", temp);
-    client.publish("home/esp32/temperature", tempString); // Publish the temperature
+    client.publish("home/kitchen/temperature", tempString); // Publish the temperature
   }
 }
