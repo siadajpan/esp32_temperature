@@ -6,7 +6,11 @@
 // WiFi and MQTT credentials
 const char* ssid = "Magda en Karol";
 const char* password = "klapeczki";
-const char* mqtt_server = "192.168.129.25";
+const char* mqttServer = "192.168.129.25";
+const char* mqttUser = "temperature_kitchen";
+const char* mqttPassword = "klapeczki";
+const char* mqttTopic = "home/kitchen/temperature";
+const char* mqttClientId = "KitchenTemperature";  // each mqtt client needs a different id
 
 // Define the pin for the OneWire bus (connected to the DS18B20 sensor)
 #define ONE_WIRE_BUS 4
@@ -36,7 +40,7 @@ void setup() {
   Serial.println("Connected to WiFi");
 
   // Set up MQTT server
-  client.setServer(mqtt_server, 1883);
+  client.setServer(mqttServer, 1883);
 
   // Start the DS18B20 temperature sensor
   sensors.begin();
@@ -57,7 +61,7 @@ void reconnectMQTT() {
   // Reconnect to the MQTT server
   while (!client.connected()) {
     Serial.print("Attempting MQTT connection...");
-    if (client.connect("ESP32Client")) {
+    if (client.connect(mqttClientId, mqttUser, mqttPassword)) {
       Serial.println("connected");
     } else {
       Serial.print("failed, rc=");
@@ -96,8 +100,10 @@ void loop() {
     char tempString[10];
     snprintf(tempString, sizeof(tempString), "%.2f", temp);
 
-    // Publish the temperature data to the MQTT topic
-    client.publish("home/bedroom/temperature", tempString);
+    if (temp > 0){
+      // Publish the temperature data to the MQTT topic
+      client.publish(mqttTopic, tempString);
+    }
 
     Serial.print("Real Time Temp: ");
     Serial.println(tempString);
